@@ -112,7 +112,7 @@ class GUI:
 
         # Image frame
         self.imageframe = tk.Frame(self.bottomframe)
-        self.imgpanel = tk.Label(self.imageframe)
+        self.imgpanel = tk.Label(self.imageframe, bd=0)
         self.imgpanel.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
 
         # Rename frame
@@ -120,31 +120,38 @@ class GUI:
         self.origname = tk.StringVar()
         self.renameentry = tk.Entry(self.renameframe, width=60, text=self.origname)
         self.renamebutton = tk.Button(self.renameframe, text='Rename', command = self.renameselected)
+        self.dimensionlabel = tk.Label(self.renameframe, text='', font=(None, 20))
+        self.filesizelabel = tk.Label(self.renameframe, text='', font=(None, 20))
         self.renameentry.pack()
         self.renamebutton.pack()
+        self.dimensionlabel.pack()
+        self.filesizelabel.pack()
 
         # Final placements
         self.imageframe.pack(fill='both', expand=True, side='left', padx=10, pady=10)
         self.renameframe.pack(fill='both', expand=False, side='right', padx=10, pady=10)
         self.bottomframe.pack(expand=True, fill='both')
 
-        self.createimage()
-
-
-        self.window.bind('<Configure>', self.displayimage)
+        self.loadimage()
+        self.window.bind('<Return>', self.returntorename)
+        self.window.bind('<Configure>', self.resizeimagetowindow)
         self.window.lift()
         self.window.mainloop()
         
     def changerecursive(self):
         self.recursive = self.currentrecursivestate.get()
         self.scanlist()
+        self.listbox.selection_set(self.cur_sel)
+        self.listbox.see(self.cur_sel)
 
     def changeshowfullpath(self):
         self.showfullpath = self.currentshowfullpathstate.get()
         self.scanlist()
+        self.listbox.selection_set(self.cur_sel)
+        self.listbox.see(self.cur_sel)
 
     def renameselected(self):
-        cur_sel = self.listbox.curselection()
+        self.cur_sel = self.listbox.curselection()
         selectedfilename = self.filelist.filelist[self.listbox.curselection()[0]][1]
         fullpath = self.filelist.filelist[self.listbox.curselection()[0]][0]
         pathonly = fullpath[:fullpath.index(selectedfilename)]
@@ -153,9 +160,12 @@ class GUI:
         os.rename(fullpath, newpath)
         self.filelist = Filelist(self.filepath, self.lenlimit, self.recursive)
         self.populatelist()
-        self.listbox.selection_set([cur_sel])
-        self.createimage()
-        
+        self.listbox.selection_set(self.cur_sel)
+        self.listbox.see(self.cur_sel)
+        self.loadimage()
+                         
+    def returntorename(self, event):
+        self.renameselected()
         
     def fillrenameentry(self):
         try:
@@ -167,19 +177,34 @@ class GUI:
             pass
 
     def displayimage(self, event):
-        self.createimage()
+        self.loadimage()
 
-    def createimage(self):
+    def resizeimagetowindow(self, event):
+        self.refreshimage()
+
+    def loadimage(self):
         self.imgpanel.image = None
+        self.cur_sel = self.listbox.curselection()
+        try:
+            newpath = self.filelist.filelist[self.cur_sel[0]][0]
+            self.newphoto = Image.open(newpath).convert('RGB')
+            self.imgsize = self.newphoto.size
+            self.strimgsize = '%s x %s' % self.imgsize
+            self.strfilesize = round(os.stat(newpath).st_size / 1000)
+            self.strfilesize = str(format(int(self.strfilesize), ',d')) +' KB'
+        except (OSError, AttributeError):
+            self.newphoto = Image.open(self.noimage)
+            self.strimgsize = ('No Image Recognised')
+            self.strfilesize = ''
+        self.imginfo = self.newphoto.info
+        self.refreshimage()
+        
+
+    def refreshimage(self):
         framewidth = self.imageframe.winfo_width()
         frameheight = self.imageframe.winfo_height()
-        try:
-            newpath = self.filelist.filelist[self.listbox.curselection()[0]][0]
-            newphoto = Image.open(newpath)
-        except (OSError, AttributeError):
-            newphoto = Image.open(self.noimage)
-        oldwidth = ImageTk.PhotoImage(newphoto).width()
-        oldheight = ImageTk.PhotoImage(newphoto).height()
+        oldwidth = ImageTk.PhotoImage(self.newphoto).width()
+        oldheight = ImageTk.PhotoImage(self.newphoto).height()
         newwidth = oldwidth
         newheight = oldheight
         
@@ -194,10 +219,12 @@ class GUI:
             newwidth = int(newwidth * rfactor)
             newheight = even_newer_height
             
-        newphoto = newphoto.resize((newwidth, newheight), Image.ANTIALIAS)
+        newphoto = self.newphoto.resize((newwidth, newheight), Image.ANTIALIAS)
         newphoto = ImageTk.PhotoImage(newphoto)
         self.imgpanel.config(image=newphoto)
         self.imgpanel.image = newphoto
+        self.dimensionlabel.config(text=self.strimgsize)
+        self.filesizelabel.config(text=self.strfilesize)
 
         self.fillrenameentry()
         
