@@ -120,9 +120,11 @@ class GUI:
         self.separatorV = tk.Frame(self.bottomframe, width=2, bd=1, relief='sunken')
 
         # Image frame
-        self.imageframe = tk.Frame(self.bottomframe)
-        self.imgpanel = tk.Label(self.imageframe, bd=0)
-        self.imgpanel.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+        self.imageframe = tk.Frame(self.bottomframe, bg='black', bd=1, relief='sunken',
+                                   padx=5, pady=5)
+        self.imgpanel = tk.Label(self.imageframe, bg='black', anchor='center', justify='center')
+        self.imgpanel.place(relx=0.5, rely=0.5,
+                            relwidth=1, relheight=1, anchor='center')
 
         # Rename frame
         self.renameframe = tk.Frame(self.bottomframe)
@@ -260,7 +262,7 @@ class GUI:
             newpath = self.filelist.filelist[self.cur_sel[0]][0]
             self.newphoto = Image.open(newpath).convert('RGB')
             self.imgsize = self.newphoto.size
-            self.strimgsize = '%s x %s // ' % self.imgsize
+            self.strimgsize = '%s x %s | ' % self.imgsize
             self.strfilesize = round(os.stat(newpath).st_size / 1000)
             self.strfilesize = format(int(self.strfilesize), ',d') +' KB'
         except (OSError, AttributeError):
