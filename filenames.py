@@ -5,7 +5,6 @@ from PIL import ImageTk, Image
 import time
 from send2trash import send2trash
 
-
 opsys = os.name
 
 class Filelist:
@@ -32,10 +31,13 @@ class Filelist:
                     extind = i.index('.')
                 except ValueError:
                     continue
-                if self.lenlimit == 0:
-                    self.appendfilelist(root, i)
-                elif len(i[:extind]) <= self.lenlimit:
-                    self.appendfilelist(root, i)
+                try:
+                    if self.lenlimit == 0:
+                        self.appendfilelist(root, i)
+                    elif len(i[:extind]) <= self.lenlimit:
+                        self.appendfilelist(root, i)
+                except Exception as e:
+                    print(e)
 
     def nonrscan(self, lenlimit):
         for i in os.listdir(self.path):
@@ -43,11 +45,13 @@ class Filelist:
                 extind = i.index('.')
             except ValueError:
                 continue
-            if self.lenlimit == 0:
-                self.appendfilelist(self.path, i)
-            elif len(i[:extind]) <= self.lenlimit:
-                self.appendfilelist(self.path, i)
-
+            try:
+                if self.lenlimit == 0:
+                    self.appendfilelist(self.path, i)
+                elif len(i[:extind]) <= self.lenlimit:
+                    self.appendfilelist(self.path, i)
+            except Exception as e:
+                    print(e)
     def sortbylen(self):
         self.filelist.sort(key = lambda x: len(x[1]))
 
@@ -58,7 +62,6 @@ class Filelist:
         self.filelist.sort(key= lambda x: int(x[2]))
 
     def sort(self, sortby):
-        print('sorting...')
         if self.sortby == 'Sort By: Name Length':
             self.sortbylen()
         elif self.sortby == 'Sort By: Alphabetical':
@@ -85,10 +88,10 @@ class GUI:
         # file list setup
         self.recursive = True
         self.showfullpath = True
-        if opsys == 'posix':
-            self.noimage = './img/noimage.jpg'
-        elif opsys == 'nt':
-            self.noimage = '.\\img\\noimage.jpg'
+##        if opsys == 'posix':
+        self.noimage = './img/noimage.jpg'
+##        elif opsys == 'nt':
+##            self.noimage = '.\\img\\noimage.jpg'
         self.filepath = None
         self.lenlimit = 0
 
