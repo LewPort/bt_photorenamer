@@ -9,16 +9,21 @@ from send2trash import send2trash
 opsys = os.name
 
 class Filelist:
-    def __init__(self, path, lenlimit, recursive):
+    def __init__(self, path, lenlimit, recursive, sortby):
         self.path = path
         self.filelist = []
         self.recursive = recursive
         self.lenlimit = lenlimit
+        self.sortby = sortby
         if self.recursive == True:
             self.rscan(self.lenlimit)
         else:
             self.nonrscan(self.lenlimit)
-        self.sortbylen()
+        self.sort(self.sortby)
+
+    def appendfilelist(self, root, i):
+        self.filelist.append([os.path.join(root, i), i, os.path.getsize(os.path.join(root, i))])
+        
         
     def rscan(self, lenlimit):
         for root, subdir, file in os.walk(self.path):
@@ -28,9 +33,9 @@ class Filelist:
                 except ValueError:
                     continue
                 if self.lenlimit == 0:
-                    self.filelist.append([os.path.join(root, i), i])
+                    self.appendfilelist(root, i)
                 elif len(i[:extind]) <= self.lenlimit:
-                    self.filelist.append([os.path.join(root, i), i])
+                    self.appendfilelist(root, i)
 
     def nonrscan(self, lenlimit):
         for i in os.listdir(self.path):
@@ -39,12 +44,28 @@ class Filelist:
             except ValueError:
                 continue
             if self.lenlimit == 0:
-                self.filelist.append([os.path.join(self.path, i), i])
+                self.appendfilelist(self.path, i)
             elif len(i[:extind]) <= self.lenlimit:
-                self.filelist.append([os.path.join(self.path, i), i])
+                self.appendfilelist(self.path, i)
 
     def sortbylen(self):
         self.filelist.sort(key = lambda x: len(x[1]))
+
+    def sortbyname(self):
+        self.filelist.sort(key=lambda x: str.lower(x[1]))
+
+    def sortbysize(self):
+        self.filelist.sort(key= lambda x: int(x[2]))
+
+    def sort(self, sortby):
+        print('sorting...')
+        if self.sortby == 'Sort By: Name Length':
+            self.sortbylen()
+        elif self.sortby == 'Sort By: Alphabetical':
+            self.sortbyname()
+        elif self.sortby == 'Sort By: File Size':
+            self.sortbysize()
+        
             
 ''''''''''''''''''''''''''''''''''''
 '''tkinter starts hur'''
@@ -58,6 +79,7 @@ class GUI:
         self.winH = 500
         self.window.geometry('%dx%d' % (self.winW, self.winH))
         self.window.title('File Renamer')
+        self.filelist = []
         self.filecount = 0
 
         # file list setup
@@ -87,6 +109,14 @@ class GUI:
         # Browsing-for-file widgets etc
         self.browseframe = tk.Frame(self.window)
         self.browsebutton = tk.Button(self.browseframe, text='Browse', width=20, command=self.browsewin)
+        
+        self.var_sortby = tk.StringVar(self.window)
+        self.var_sortby.set('Sort By: Alphabetical')
+        self.sortby = tk.OptionMenu(self.browseframe, self.var_sortby,
+                                     'Sort By: Alphabetical', 'Sort By: Name Length', 'Sort By: File Size',
+                                    command = self.refresh_list)
+        self.sortby.config(width=22)
+        
         self.filecountlabel = tk.Label(self.browseframe, text=str(self.filecount)+' files found.')
         self.currentrecursivestate=tk.BooleanVar()
         self.currentshowfullpathstate=tk.BooleanVar()
@@ -105,7 +135,8 @@ class GUI:
                                      offvalue=False,
                                      command = self.changeshowfullpath)
         self.showfullpathcheck.select()
-        self.browsebutton.grid(column=0, row=0, rowspan=3)
+        self.browsebutton.grid(column=0, row=0)
+        self.sortby.grid(column=0, row=1)
         self.filecountlabel.grid(column=1, row=0, sticky='w')
         self.showfullpathcheck.grid(column=1, row=1, sticky='w')
         self.recursivecheck.grid(column=1, row=2, sticky='w')
@@ -194,15 +225,17 @@ class GUI:
         
     def changerecursive(self):
         self.recursive = self.currentrecursivestate.get()
-        self.scanlist()
-        self.listbox.selection_set(self.cur_sel)
-        self.listbox.see(self.cur_sel)
+        self.refresh_list()
 
     def changeshowfullpath(self):
         self.showfullpath = self.currentshowfullpathstate.get()
-        self.scanlist()
-        self.listbox.selection_set(self.cur_sel)
-        self.listbox.see(self.cur_sel)
+        self.refresh_list()
+
+    def refresh_list(self, *args):
+        if self.filelist:
+            self.scanlist()
+            self.listbox.selection_set(self.cur_sel)
+            self.listbox.see(self.cur_sel)
 
     def renameselected(self):
         try:
@@ -314,7 +347,7 @@ class GUI:
                 self.listbox.insert(tk.END, i[1])
 
     def scanlist(self):
-        self.filelist = Filelist(self.filepath, self.lenlimit, self.recursive)
+        self.filelist = Filelist(self.filepath, self.lenlimit, self.recursive, self.var_sortby.get())
         self.populatelist()
 
     def browsewin(self):
@@ -324,8 +357,6 @@ class GUI:
             self.scanlist()
         else:
             pass
-
-
 
 gui = GUI()
     
