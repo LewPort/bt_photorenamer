@@ -215,7 +215,7 @@ class GUI:
             self.log.config(state='normal')
             self.log.insert(1.0, '%s:\n%s deleted!\n\n' % (timestamp, selectedfilename))
             self.log.config(state='normal')
-            self.filelist = Filelist(self.filepath, self.lenlimit, self.recursive)
+            self.create_filelist()
             self.populatelist()
             self.listbox.selection_set(self.cur_sel)
             self.listbox.see(self.cur_sel)
@@ -267,7 +267,7 @@ class GUI:
         except:
             self.log.insert(1.0, '%s:\nERROR: Could not rename %s.\n\n' % (timestamp, selectedfilename))
             
-        self.filelist = Filelist(self.filepath, self.lenlimit, self.recursive)
+        self.create_filelist()
         self.populatelist()
         self.listbox.selection_set(self.cur_sel)
         self.listbox.see(self.cur_sel)
@@ -336,6 +336,9 @@ class GUI:
         self.sizelabel.config(text=self.strimgsize + self.strfilesize)
 
         self.fillrenameentry()
+
+    def create_filelist(self):
+        self.filelist = Filelist(self.filepath, self.lenlimit, self.recursive, self.var_sortby.get())
         
     def populatelist(self):
         self.listbox.delete(0, tk.END)
@@ -350,7 +353,7 @@ class GUI:
                 self.listbox.insert(tk.END, i[1])
 
     def scanlist(self):
-        self.filelist = Filelist(self.filepath, self.lenlimit, self.recursive, self.var_sortby.get())
+        self.create_filelist()
         self.populatelist()
 
     def browsewin(self):
